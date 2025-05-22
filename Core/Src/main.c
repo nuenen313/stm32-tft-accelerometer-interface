@@ -28,6 +28,8 @@
 #include "z_touch_XPT2046.h"
 #include "z_touch_XPT2046_test.h"
 #include "z_touch_XPT2046_menu.h"
+extern int16_t _width;       								///< (oriented) display width
+extern int16_t _height;      								///< (oriented) display height
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -83,7 +85,13 @@ void MX_USB_HOST_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+uint16_t x_touch;
+uint16_t y_touch;
+uint16_t z_touch;
+char text[30];
+uint32_t touchTime=0, touchDelay=0;
+uint16_t px=0,py,npx,npy;
+uint8_t isTouch;
 /* USER CODE END 0 */
 
 /**
@@ -103,7 +111,6 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -128,9 +135,10 @@ int main(void)
   MX_TIM3_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
-  Displ_Init(Displ_Orientat_0);		// initialize the display and set the initial display orientation (here is orientaton: 0°) - THIS FUNCTION MUST PRECEED ANY OTHER DISPLAY FUNCTION CALL.
+  Displ_Init(Displ_Orientat_90);		// initialize the display and set the initial display orientation (here is orientaton: 0°) - THIS FUNCTION MUST PRECEED ANY OTHER DISPLAY FUNCTION CALL.
   Displ_CLS(BLACK);			// after initialization (above) and before turning on backlight (below), you can draw the initial display appearance. (here I'm just clearing display with a black background)
   Displ_BackLight('I');
+  Displ_FillArea(0,0,_width,_height,WHITE);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -143,6 +151,25 @@ int main(void)
     /* USER CODE BEGIN 3 */
     //Displ_PerfTest();
     //Touch_ShowData();
+   if (Touch_GotATouch(1)){
+    	touchTime=HAL_GetTick();
+    	touchDelay=(HAL_GetTick() - touchTime);
+    	Displ_CLS(WHITE);
+    	strcpy(text,"Touching");
+    	Displ_WString(10,30,text,Font20,1,BLUE,WHITE);
+
+    	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+
+    	Touch_WaitForUntouch(0);
+    }
+    else{
+    	Displ_CLS(WHITE);
+    	strcpy(text,"Not touching");
+
+    	Displ_WString(10,60,text,Font20,1,RED,WHITE);
+    	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+        Touch_WaitForTouch(0);
+   }
     //Touch_TestDrawing();
   }
   /* USER CODE END 3 */
@@ -543,16 +570,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : DISPL_CS_Pin DISPL_RST_Pin DISPL_LED_Pin DISPL_DC_Pin
-                           TOUCH_CS_Pin */
-  GPIO_InitStruct.Pin = DISPL_CS_Pin|DISPL_RST_Pin|DISPL_DC_Pin
-                          |TOUCH_CS_Pin;
-  //GPIO_InitStruct.Pin = DISPL_CS_Pin|DISPL_RST_Pin|DISPL_LED_Pin|DISPL_DC_Pin
-                           // |TOUCH_CS_Pin;
+  /*Configure GPIO pins : DISPL_CS_Pin DISPL_RST_Pin DISPL_DC_Pin TOUCH_CS_Pin */
+  GPIO_InitStruct.Pin = DISPL_CS_Pin|DISPL_RST_Pin|DISPL_DC_Pin|TOUCH_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : DISPL_LED_Pin */
+  GPIO_InitStruct.Pin = DISPL_LED_Pin;
+  //GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+  //GPIO_InitStruct.Pull = GPIO_NOPULL;
+  //GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  //HAL_GPIO_Init(DISPL_LED_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : TOUCH_INT_Pin */
   GPIO_InitStruct.Pin = TOUCH_INT_Pin;
