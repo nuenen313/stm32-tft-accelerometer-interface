@@ -52,8 +52,20 @@ Mkfile.old
 dkms.conf
 
 # STM32CubeIDE
-/Debug/
-/Release/
+Debug/
+Release/
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.list
+*.dep
+
+# Eclipse project files (optional, include only if you're sharing workspace settings)
+.settings/
+.metadata/
 *.launch
 *.settings/
 .project

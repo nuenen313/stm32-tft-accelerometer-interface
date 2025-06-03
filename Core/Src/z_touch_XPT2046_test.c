@@ -144,6 +144,7 @@ void Touch_ShowData(void)
 void Touch_TestDrawing() {
 	uint16_t px=0,py,npx,npy;
 	uint8_t isTouch;
+	Displ_Orientation(Displ_Orientat_90);
 
 	for (uint8_t k=0;k<4;k++){
 

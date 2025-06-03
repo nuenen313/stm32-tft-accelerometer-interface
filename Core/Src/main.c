@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_host.h"
+#include <math.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -28,8 +29,8 @@
 #include "z_touch_XPT2046.h"
 #include "z_touch_XPT2046_test.h"
 #include "z_touch_XPT2046_menu.h"
-extern int16_t _width;       								///< (oriented) display width
-extern int16_t _height;      								///< (oriented) display height
+extern int16_t _width;
+extern int16_t _height;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -39,7 +40,11 @@ extern int16_t _height;      								///< (oriented) display height
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define BUTTON_W 120
+#define BUTTON_H 64
+#define BUTTON_X ((_width - BUTTON_W)/2)
+#define BUTTON_Y ((_height - BUTTON_H)/2)
+#define PI 3.14159f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -92,6 +97,20 @@ char text[30];
 uint32_t touchTime=0, touchDelay=0;
 uint16_t px=0,py,npx,npy;
 uint8_t isTouch;
+
+void drawStartButton(){
+	Displ_CLS(DDDD_WHITE);
+	Displ_fillRoundRect(BUTTON_X, BUTTON_Y, BUTTON_W, BUTTON_H, BUTTON_H/6, DD_GREEN);
+	Displ_CString(BUTTON_X + 6, BUTTON_Y + 6,
+	                  BUTTON_X + BUTTON_W - 6, BUTTON_Y + BUTTON_H - 4,
+	                  "START", Font24, 1, WHITE, DD_GREEN);
+}
+void drawScreen2() {
+	int16_t baseSize = 60;
+	int16_t amplitude = 140;
+	Displ_CLS(DDDD_WHITE);
+	Displ_CString(0, 24, _width - 1, 40, "Screen 2", Font24, 1, WHITE, DDDD_WHITE);
+}
 /* USER CODE END 0 */
 
 /**
@@ -138,7 +157,8 @@ int main(void)
   Displ_Init(Displ_Orientat_90);		// initialize the display and set the initial display orientation (here is orientaton: 0°) - THIS FUNCTION MUST PRECEED ANY OTHER DISPLAY FUNCTION CALL.
   Displ_CLS(BLACK);			// after initialization (above) and before turning on backlight (below), you can draw the initial display appearance. (here I'm just clearing display with a black background)
   Displ_BackLight('I');
-  Displ_FillArea(0,0,_width,_height,WHITE);
+  //Displ_FillArea(0,0,_width,_height,WHITE);
+  drawStartButton();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -149,28 +169,13 @@ int main(void)
     MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
-    //Displ_PerfTest();
-    //Touch_ShowData();
-   if (Touch_GotATouch(1)){
-    	touchTime=HAL_GetTick();
-    	touchDelay=(HAL_GetTick() - touchTime);
-    	Displ_CLS(WHITE);
-    	strcpy(text,"Touching");
-    	Displ_WString(10,30,text,Font20,1,BLUE,WHITE);
-
-    	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
-
-    	Touch_WaitForUntouch(0);
+    if (Touch_GotATouch(1)) {
+                if (Touch_In_XY_area(BUTTON_X, BUTTON_Y, BUTTON_W, BUTTON_H)) {
+                    Touch_WaitForUntouch(300);
+                    drawScreen2();
+                    break;
+                }
     }
-    else{
-    	Displ_CLS(WHITE);
-    	strcpy(text,"Not touching");
-
-    	Displ_WString(10,60,text,Font20,1,RED,WHITE);
-    	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
-        Touch_WaitForTouch(0);
-   }
-    //Touch_TestDrawing();
   }
   /* USER CODE END 3 */
 }
