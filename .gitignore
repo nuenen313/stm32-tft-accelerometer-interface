@@ -58,3 +58,24 @@ dkms.conf
 *.settings/
 .project
 .cproject
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.list
+*.dep
+
+# Eclipse project files (optional, include only if you're sharing workspace settings)
+.settings/
+.metadata/
+*.log
+
+# CubeMX generated files
+MX_*
+
+# Backup and temporary files
+*.bak
+*.swp
+*.tmp
