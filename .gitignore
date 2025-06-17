@@ -1,16 +1,13 @@
 
-*
 
+*
 !.gitignore
-!Core/
-!/Core/Src/**
-!/Core/Inc/**
 !*.ioc
 !.project
 !.cproject
-!/.settings/
-/Drivers/
-/Middlewares/
-/build/
-/Debug/
-/Release/
+!.settings/
+!Core/
+!Core/Inc/
+!Core/Inc/**
+!Core/Src/
+!Core/Src/**
