@@ -1,93 +1,15 @@
-# Prerequisites
-*.d
 
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
+*
 
-# Linker output
-*.ilk
-*.map
-*.exp
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
-
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
-
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
-
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
-
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
-
-# STM32CubeIDE
-Debug/
-Release/
-*.o
-*.d
-*.elf
-*.bin
-*.hex
-*.map
-*.list
-*.dep
-
-# Eclipse project files (optional, include only if you're sharing workspace settings)
-.settings/
-.metadata/
-*.launch
-*.settings/
-.project
-.cproject
-*.o
-*.d
-*.elf
-*.bin
-*.hex
-*.map
-*.list
-*.dep
-
-# Eclipse project files (optional, include only if you're sharing workspace settings)
-.settings/
-.metadata/
-*.log
-
-# CubeMX generated files
-MX_*
-
-# Backup and temporary files
-*.bak
-*.swp
-*.tmp
+!.gitignore
+!Src/
+!Inc/
+!*.ioc
+!.project
+!.cproject
+!.settings/
+/Drivers/
+/Middlewares/
+/build/
+/Debug/
+/Release/
