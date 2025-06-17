@@ -2,12 +2,13 @@
 *
 
 !.gitignore
-!Src/
-!Inc/
+!Core/
+!/Core/Src/**
+!/Core/Inc/**
 !*.ioc
 !.project
 !.cproject
-!.settings/
+!/.settings/
 /Drivers/
 /Middlewares/
 /build/
