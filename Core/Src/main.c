@@ -19,20 +19,11 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_host.h"
-#include "LSM6DS3.h"
-#include <math.h>
-#include <stdbool.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "fonts.h"
-#include "z_displ_ILI9XXX.h"
-#include "z_displ_ILI9XXX_test.h"
-#include "z_touch_XPT2046.h"
-#include "z_touch_XPT2046_test.h"
-#include "z_touch_XPT2046_menu.h"
-extern int16_t _width;
-extern int16_t _height;
+#include "LSM6DS3.h"
+#include "tft_app.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,17 +33,6 @@ extern int16_t _height;
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define BUTTON_W 120
-#define BUTTON_H 64
-#define BUTTON_X ((_width - BUTTON_W)/2)
-#define BUTTON_Y ((_height - BUTTON_H)/2)
-#define PI 3.14159f
-#define PLOT_X 10
-#define PLOT_Y 30
-#define PLOT_WIDTH (_width - 20)
-#define PLOT_HEIGHT 150
-#define MAX_PLOT_POINTS 100
-#define PLOT_SCALE 2.0f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -98,7 +78,7 @@ void MX_USB_HOST_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-static bool grid_needs_redraw = true;
+//static bool grid_needs_redraw = true;
 uint16_t x_touch;
 uint16_t y_touch;
 uint16_t z_touch;
@@ -106,207 +86,8 @@ char text[30];
 uint32_t touchTime=0, touchDelay=0;
 uint16_t px=0,py,npx,npy;
 uint8_t isTouch;
-uint32_t lastUpdateTime = 0;
-uint32_t updateInterval = 2000;
+
 int screen_state = 0;
-static float x_data[MAX_PLOT_POINTS];
-static int plot_index = 0;
-static bool plot_buffer_full = false;
-
-void initPlot() {
-    // Initialize plot data
-    for (int i = 0; i < MAX_PLOT_POINTS; i++) {
-        x_data[i] = 0.0f;
-    }
-    plot_index = 0;
-    plot_buffer_full = false;
-    grid_needs_redraw = true;  // Force grid redraw on init
-}
-
-void drawPlot() {
-    // Only redraw grid if needed
-    if (grid_needs_redraw) {
-        drawPlotGrid();
-        grid_needs_redraw = false;
-    } else {
-        // Just clear the plot data area (not the grid)
-        Displ_FillArea(PLOT_X + 1, PLOT_Y + 1, PLOT_WIDTH - 2, PLOT_HEIGHT - 2, BLACK);
-    }
-
-    // Calculate how many points to draw
-    int points_to_draw = plot_buffer_full ? MAX_PLOT_POINTS : plot_index;
-    if (points_to_draw < 2) return;
-
-    // Calculate pixel spacing
-    float x_step = (float)PLOT_WIDTH / (MAX_PLOT_POINTS - 1);
-
-    // Draw the plot line
-    for (int i = 0; i < points_to_draw - 1; i++) {
-        // Get data points
-        int current_idx = plot_buffer_full ? (plot_index + i) % MAX_PLOT_POINTS : i;
-        int next_idx = plot_buffer_full ? (plot_index + i + 1) % MAX_PLOT_POINTS : i + 1;
-
-        float current_val = x_data[current_idx];
-        float next_val = x_data[next_idx];
-
-        // Convert to screen coordinates
-        int x1 = PLOT_X + (int)(i * x_step);
-        int x2 = PLOT_X + (int)((i + 1) * x_step);
-
-        // Convert acceleration to Y coordinate (invert Y axis for display)
-        int y1 = PLOT_Y + PLOT_HEIGHT/2 - (int)((current_val / PLOT_SCALE) * (PLOT_HEIGHT/2));
-        int y2 = PLOT_Y + PLOT_HEIGHT/2 - (int)((next_val / PLOT_SCALE) * (PLOT_HEIGHT/2));
-
-        // Clamp Y coordinates to plot area
-        if (y1 < PLOT_Y) y1 = PLOT_Y;
-        if (y1 > PLOT_Y + PLOT_HEIGHT) y1 = PLOT_Y + PLOT_HEIGHT;
-        if (y2 < PLOT_Y) y2 = PLOT_Y;
-        if (y2 > PLOT_Y + PLOT_HEIGHT) y2 = PLOT_Y + PLOT_HEIGHT;
-
-        // Draw line segment
-        Displ_Line(x1, y1, x2, y2, ORANGE);
-
-        // Draw current point
-        Displ_fillCircle(x1, y1, 1, YELLOW);
-    }
-
-    // Draw the latest point in red
-    if (points_to_draw > 0) {
-        int latest_idx = plot_buffer_full ? (plot_index - 1 + MAX_PLOT_POINTS) % MAX_PLOT_POINTS : plot_index - 1;
-        if (latest_idx >= 0) {
-            float latest_val = x_data[latest_idx];
-            int latest_x = PLOT_X + (int)((points_to_draw - 1) * x_step);
-            int latest_y = PLOT_Y + PLOT_HEIGHT/2 - (int)((latest_val / PLOT_SCALE) * (PLOT_HEIGHT/2));
-
-            // Clamp Y coordinate
-            if (latest_y < PLOT_Y) latest_y = PLOT_Y;
-            if (latest_y > PLOT_Y + PLOT_HEIGHT) latest_y = PLOT_Y + PLOT_HEIGHT;
-
-            Displ_fillCircle(latest_x, latest_y, 2, DD_RED);
-        }
-    }
-}
-void addPlotPoint(float x_accel) {
-    // Add new data point
-    x_data[plot_index] = x_accel;
-    plot_index++;
-
-    if (plot_index >= MAX_PLOT_POINTS) {
-        plot_index = 0;
-        plot_buffer_full = true;
-    }
-}
-void drawPlotGrid() {
-    // Draw plot background - use FillArea instead of fillRect
-    Displ_FillArea(PLOT_X, PLOT_Y, PLOT_WIDTH, PLOT_HEIGHT, BLACK);
-
-    // Draw border using Border function
-    Displ_Border(PLOT_X, PLOT_Y, PLOT_WIDTH, PLOT_HEIGHT, 1, WHITE);
-
-    // Draw center line (0g) using horizontal line
-    int center_y = PLOT_Y + PLOT_HEIGHT / 2;
-    for (int x = PLOT_X; x < PLOT_X + PLOT_WIDTH; x++) {
-        Displ_Pixel(x, center_y, WHITE);
-    }
-
-    // Draw +1g line
-    int plus_1g_y = PLOT_Y + PLOT_HEIGHT / 4;
-    for (int x = PLOT_X; x < PLOT_X + PLOT_WIDTH; x += 4) {  // Dotted line
-        Displ_Pixel(x, plus_1g_y, WHITE);
-    }
-
-    // Draw -1g line
-    int minus_1g_y = PLOT_Y + (3 * PLOT_HEIGHT) / 4;
-    for (int x = PLOT_X; x < PLOT_X + PLOT_WIDTH; x += 4) {  // Dotted line
-        Displ_Pixel(x, minus_1g_y, WHITE);
-    }
-
-    // Draw scale labels using WString
-    Displ_WString(PLOT_X - 25, plus_1g_y - 8, "+1g", Font12, 1, WHITE, DDDD_WHITE);
-    Displ_WString(PLOT_X - 20, center_y - 8, "0g", Font12, 1, WHITE, DDDD_WHITE);
-    Displ_WString(PLOT_X - 25, minus_1g_y - 8, "-1g", Font12, 1, WHITE, DDDD_WHITE);
-}
-void drawLiveDataWithPlot() {
-        static bool first_run = true;
-        if (first_run) {
-            Displ_CLS(DDDD_WHITE);
-            first_run = false;
-        } else {
-            // Just clear the title area
-            Displ_FillArea(0, 0, _width, PLOT_Y - 5, DDDD_WHITE);
-        }
-
-        // Title
-        Displ_WString(10, 5, "LSM6DS3 X-Axis Plot", Font16, 1, BLACK, DDDD_WHITE);
-
-        // Read sensor data
-        LSM6DS3_AccelData accel_data = LSM6DS3_read_acceleration(hi2c1);
-
-        if (accel_data.status == 1) {
-            // Add data point to plot
-            addPlotPoint(accel_data.x);
-
-            // Draw the plot
-            drawPlot();
-
-            // Clear and redraw text area only
-            int text_y = PLOT_Y + PLOT_HEIGHT + 15;
-            Displ_FillArea(0, text_y, _width, _height - text_y, DDDD_WHITE);
-
-            char msg[64];
-            sprintf(msg, "X: %.3f g", accel_data.x);
-            Displ_WString(10, text_y, msg, Font16, 1, BLACK, DDDD_WHITE);
-
-            sprintf(msg, "Y: %.3f g", accel_data.y);
-            Displ_WString(10, text_y + 20, msg, Font12, 1, BLACK, DDDD_WHITE);
-
-            sprintf(msg, "Z: %.3f g", accel_data.z);
-            Displ_WString(10, text_y + 35, msg, Font12, 1, BLACK, DDDD_WHITE);
-
-            sprintf(msg, "Time: %lu ms", HAL_GetTick());
-            Displ_WString(10, text_y + 50, msg, Font12, 1, WHITE, DDDD_WHITE);
-
-        } else {
-            Displ_WString(50, PLOT_Y + PLOT_HEIGHT/2, "Sensor Failed!", Font16, 1, DD_RED, DDDD_WHITE);
-        }
-}
-
-void drawStartButton(){
-	Displ_CLS(DDDD_WHITE);
-	Displ_fillRoundRect(BUTTON_X, BUTTON_Y, BUTTON_W, BUTTON_H, BUTTON_H/6, DD_GREEN);
-	Displ_CString(BUTTON_X + 6, BUTTON_Y + 6,
-	                  BUTTON_X + BUTTON_W - 6, BUTTON_Y + BUTTON_H - 4,
-	                  "START", Font24, 1, WHITE, DD_GREEN);
-}
-void drawLiveData() {
-    if (HAL_GetTick() - lastUpdateTime >= updateInterval) {
-        lastUpdateTime = HAL_GetTick();
-
-        Displ_CLS(DDDD_WHITE);
-        Displ_CString(0, 0, _width-1, 20, "LSM6DS3 Live Data:", Font16, 1, WHITE, DDDD_WHITE);
-
-        LSM6DS3_AccelData accel_data = LSM6DS3_read_acceleration(hi2c1);
-        if (accel_data.status == 1) {
-            char msg[64];
-
-            sprintf(msg, "Accel X: %.2f g", accel_data.x);
-            Displ_CString(0, 30, _width-1, 20, msg, Font16, 1, WHITE, DDDD_WHITE);
-
-            sprintf(msg, "Accel Y: %.2f g", accel_data.y);
-            Displ_CString(0, 50, _width-1, 20, msg, Font16, 1, WHITE, DDDD_WHITE);
-
-            sprintf(msg, "Accel Z: %.2f g", accel_data.z);
-            Displ_CString(0, 70, _width-1, 20, msg, Font16, 1, WHITE, DDDD_WHITE);
-
-            float total = sqrt(accel_data.x*accel_data.x + accel_data.y*accel_data.y + accel_data.z*accel_data.z);
-            sprintf(msg, "Total: %.2f g", total);
-            Displ_CString(0, 90, _width-1, 20, msg, Font16, 1, WHITE, DDDD_WHITE);
-
-        } else {
-            Displ_CString(0, 30, _width-1, 20, "Sensor Read Failed!", Font16, 1, RED, DDDD_WHITE);
-        }
-    }
-}
 
 void I2C_bus_scan(){
 	char msg[32];
@@ -365,8 +146,6 @@ void I2C_bus_scan(){
 float LSM6DS3_read_XL_ODR_debug_display(I2C_HandleTypeDef hi2c_def) {
     char msg[64];
     uint8_t ctrl1_xl_value;
-
-    // Read CTRL1_XL register
     HAL_StatusTypeDef status = HAL_I2C_Mem_Read(&hi2c_def, LSM6DS3_ADDRESS << 1, CTRL1_XL,
                                                 I2C_MEMADD_SIZE_8BIT, &ctrl1_xl_value, 1, HAL_MAX_DELAY);
 
@@ -379,12 +158,9 @@ float LSM6DS3_read_XL_ODR_debug_display(I2C_HandleTypeDef hi2c_def) {
     sprintf(msg, "CTRL1_XL: 0x%02X", ctrl1_xl_value);
     Displ_CString(0, 24, _width-1, 20, msg, Font16, 1, WHITE, DDDD_WHITE);
 
-    // Extract ODR bits (bits 7:4)
     uint8_t odr_bits = (ctrl1_xl_value >> 4) & 0x0F;
     sprintf(msg, "ODR bits: 0x%X", odr_bits);
     Displ_CString(0, 48,_width-1, 20, msg, Font16, 1, WHITE, DDDD_WHITE);
-
-    // Convert ODR bits to actual frequency
     float odr_value;
     switch (odr_bits) {
         case 0x0: odr_value = 0.0f; strcpy(msg, "ODR: Power down"); break;
@@ -449,8 +225,8 @@ int main(void)
   MX_TIM3_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
-  Displ_Init(Displ_Orientat_90);		// initialize the display and set the initial display orientation (here is orientaton: 0°) - THIS FUNCTION MUST PRECEED ANY OTHER DISPLAY FUNCTION CALL.
-  Displ_CLS(BLACK);			// after initialization (above) and before turning on backlight (below), you can draw the initial display appearance. (here I'm just clearing display with a black background)
+  Displ_Init(Displ_Orientat_90);
+  Displ_CLS(BLACK);
   Displ_BackLight('I');
   //Displ_FillArea(0,0,_width,_height,WHITE);
   drawStartButton();
@@ -460,20 +236,27 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-      /* USER CODE END WHILE */
-      MX_USB_HOST_Process();
+    /* USER CODE END WHILE */
+    MX_USB_HOST_Process();
 
-      /* USER CODE BEGIN 3 */
+    /* USER CODE BEGIN 3 */
       if (Touch_GotATouch(1)) {
           if (Touch_In_XY_area(BUTTON_X, BUTTON_Y, BUTTON_W, BUTTON_H)) {
               Touch_WaitForUntouch(300);
+              current_screen = SCREEN_PLOT;
               I2C_bus_scan();
-              while (1) {
-                  MX_USB_HOST_Process();
-                  //drawLiveData();
-                  drawLiveDataWithPlot();
-                  //HAL_Delay(updateInterval);
-              }
+              while (current_screen == SCREEN_PLOT) {
+                      MX_USB_HOST_Process();
+                      drawLiveDataWithPlot(hi2c1);
+
+                      if (Touch_GotATouch(1)) {
+                          if (Touch_In_XY_area(GO_BACK_BTN_X, GO_BACK_BTN_Y, GO_BACK_BTN_SIZE, GO_BACK_BTN_SIZE)) {
+                              Touch_WaitForUntouch(200);
+                              current_screen = SCREEN_START;
+                              drawStartButton();
+                          }
+                      }
+                  }
           }
       }
   }
@@ -869,9 +652,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(OTG_FS_PowerSwitchOn_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PA0 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0;
-  GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
+  /*Configure GPIO pins : PA0 PA8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
@@ -904,12 +687,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PA8 */
-  GPIO_InitStruct.Pin = GPIO_PIN_8;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
   /*Configure GPIO pin : OTG_FS_OverCurrent_Pin */
   GPIO_InitStruct.Pin = OTG_FS_OverCurrent_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -917,6 +694,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(OTG_FS_OverCurrent_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 

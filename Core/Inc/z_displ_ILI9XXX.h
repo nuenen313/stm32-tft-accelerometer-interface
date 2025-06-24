@@ -35,6 +35,7 @@
 #define __Z_DISPL_ILI9XXX_H
 
 #include "fonts.h"
+#include "main.h"
 /*||||||||||| USER/PROJECT PARAMETERS |||||||||||*/
 
 /******************    STEP 0    ******************
