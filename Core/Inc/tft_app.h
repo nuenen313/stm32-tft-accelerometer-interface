@@ -52,19 +52,29 @@ typedef enum {
 typedef enum {
     SCREEN_START,
     SCREEN_PLOT,
-    SCREEN_LIVE_DATA,
-	SCREEN_MENU
+	SCREEN_CONFIG1,
+	SCREEN_CONFIG2,
+	SCREEN_MENU,
+	SCREEN_I2C,
+	SCREEN_DEBUG
 } AppScreen;
 extern volatile AxisCurr current_axis;
 extern AppScreen current_screen;
+extern volatile uint8_t touch_event_flag;
+extern float selected_fs;
 
 void drawStartButton(void);
 void initPlot(void);
 void drawPlot(void);
 void drawPlotGrid(void);
+void drawODRConfigScreen(void);
 void drawGoBackButton(void);
 void addPlotPoint(float x_accel);
-void drawLiveDataWithPlot(I2C_HandleTypeDef hi2c_def);
+void drawLiveDataWithPlot(I2C_HandleTypeDef hi2c_def, float selected_fs);
 void drawLiveData(I2C_HandleTypeDef hi2c_def);
+void HandleTouchEvent(I2C_HandleTypeDef hi2c_def);
+void drawFSConfigScreen(void);
+void drawScreenMenu(void);
+void I2C_bus_scan(I2C_HandleTypeDef hi2c_def);
 
 #endif /* INC_TFT_APP_H_ */

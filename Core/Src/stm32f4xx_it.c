@@ -42,7 +42,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
+extern volatile uint8_t touch_event_flag=0;
+volatile uint32_t last_interrupt_time = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -210,14 +211,16 @@ void EXTI0_IRQHandler(void)
   /* USER CODE BEGIN EXTI0_IRQn 0 */
 
   /* USER CODE END EXTI0_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
-  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
-  switch (current_axis){
-	  case AXIS_X: current_axis = AXIS_Y; break;
-	  case AXIS_Y: current_axis = AXIS_Z; break;
-	  case AXIS_Z: current_axis =AXIS_X; break;
-  }
-  grid_needs_redraw = true;
+
+            HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
+	        HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
+
+	        switch (current_axis) {
+	            case AXIS_X: current_axis = AXIS_Y; break;
+	            case AXIS_Y: current_axis = AXIS_Z; break;
+	            case AXIS_Z: current_axis = AXIS_X; break;
+	        }
+	        grid_needs_redraw = true;
   /* USER CODE BEGIN EXTI0_IRQn 1 */
 
   /* USER CODE END EXTI0_IRQn 1 */
@@ -232,6 +235,7 @@ void EXTI9_5_IRQHandler(void)
 
   /* USER CODE END EXTI9_5_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
+  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
   /* USER CODE BEGIN EXTI9_5_IRQn 1 */
 
   /* USER CODE END EXTI9_5_IRQn 1 */
@@ -274,6 +278,8 @@ void EXTI15_10_IRQHandler(void)
 
   /* USER CODE END EXTI15_10_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(TOUCH_INT_Pin);
+  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
+  touch_event_flag = 1;
   /* USER CODE BEGIN EXTI15_10_IRQn 1 */
 
   /* USER CODE END EXTI15_10_IRQn 1 */

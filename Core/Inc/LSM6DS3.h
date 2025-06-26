@@ -100,7 +100,7 @@
 #define OUT_MAG_RAW_Z_H 0x6B
 
 int LSM6DS3_check_who_am_i(I2C_HandleTypeDef hi2c_def);
-int LSM6DS3_XL_CONFIG(I2C_HandleTypeDef hi2c_def);
+int LSM6DS3_XL_CONFIG(I2C_HandleTypeDef hi2c_def, float odr_hz, float fs_g);
 int LSM6DS3_G_CONFIG(I2C_HandleTypeDef hi2c_def);
 int LSM6DS3_XL_ODR_CONFIG(I2C_HandleTypeDef hi2c_def);
 int LSM6DS3_data_ready(I2C_HandleTypeDef hi2c_def);
@@ -110,10 +110,12 @@ typedef struct {
     float z;
     int status;
 } LSM6DS3_AccelData;
-LSM6DS3_AccelData LSM6DS3_read_acceleration(I2C_HandleTypeDef hi2c_def);
+LSM6DS3_AccelData LSM6DS3_read_acceleration(I2C_HandleTypeDef hi2c_def, float selected_fs);
 float LSM6DS3_read_XL_ODR(I2C_HandleTypeDef hi2c_def);
+float LSM6DS3_read_XL_FS(I2C_HandleTypeDef hi2c_def);
 float LSM6DS3_read_XL_ODR_debug_display(I2C_HandleTypeDef hi2c_def);
 void LSM6DS3_verify_config_display(I2C_HandleTypeDef hi2c_def);
 void I2C_bus_scan_and_config(void);
+int LSM6DS3_initialize(I2C_HandleTypeDef hi2c_def, float odr_hz, float fs_g);
 
 #endif /* INC_LSM6DS3_H_ */
