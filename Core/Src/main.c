@@ -89,98 +89,6 @@ uint8_t isTouch;
 
 int screen_state = 0;
 
-void I2C_bus_scan(){
-	char msg[32];
-	uint8_t i2c_address;
-	HAL_StatusTypeDef result;
-	uint8_t who_am_i = 0;
-
-	for (i2c_address = 1; i2c_address < 127; i2c_address++) {
-	        result = HAL_I2C_IsDeviceReady(&hi2c1, (i2c_address << 1), 3, 10);
-	        if (result == HAL_OK) {
-	        	Displ_CLS(DDDD_WHITE);
-	        	sprintf(msg, "Device found at 0x%02X", i2c_address);
-	            Displ_CString(0, 24, _width - 1, 40, msg, Font16, 1, WHITE, DDDD_WHITE);
-	            who_am_i = LSM6DS3_check_who_am_i(hi2c1);
-	            if ( who_am_i == LSM6DS3_WHO_AM_I){
-	                char msg2[64];
-	                sprintf(msg2, "LSM6DS3 WHO_AM_I OK: 0x%02X", who_am_i);
-	                Displ_CString(0, 48, _width-1, 40, msg2, Font16, 1, WHITE, DDDD_WHITE);
-	            } else {
-	            	Displ_CString(0, 48, _width-1, 40, "WHO_AM_I read failed", Font16, 1, WHITE, DDDD_WHITE);
-	            }
-	        }
-	    }
-	if (LSM6DS3_XL_CONFIG(hi2c1) == 0) {
-	        Displ_CString(0, 72, _width-1, 20, "XL Config: OK", Font16, 1, WHITE, DDDD_WHITE);
-	    } else {
-	        Displ_CString(0, 72, _width-1, 20, "XL Config: FAIL", Font16, 1, WHITE, DDDD_WHITE);
-	        HAL_Delay(2000);
-	        return;
-	    }
-	    HAL_Delay(500);
-
-	    if (LSM6DS3_G_CONFIG(hi2c1) == 0) {
-	        Displ_CString(0, 96, _width-1, 20, "G Config: OK", Font16, 1, WHITE, DDDD_WHITE);
-	    } else {
-	        Displ_CString(0, 96, _width-1, 20, "G Config: FAIL", Font16, 1, WHITE, DDDD_WHITE);
-	        HAL_Delay(2000);
-	        return;
-	    }
-	    HAL_Delay(500);
-
-	    if (LSM6DS3_XL_ODR_CONFIG(hi2c1) == 0) {
-	        Displ_CString(0, 120, _width-1, 20, "ODR Config: OK", Font16, 1, WHITE, DDDD_WHITE);
-	    } else {
-	        Displ_CString(0, 120, _width-1, 20, "ODR Config: FAIL", Font16, 1, WHITE, DDDD_WHITE);
-	        HAL_Delay(2000);
-	        return;
-	    }
-	    HAL_Delay(1000);
-
-	    Displ_CLS(DDDD_WHITE);
-	    Displ_CString(0, 0, _width-1, 20, "LSM6DS3 Ready!", Font16, 1, WHITE, DDDD_WHITE);
-	    float accel_odr = LSM6DS3_read_XL_ODR_debug_display(hi2c1);
-}
-
-float LSM6DS3_read_XL_ODR_debug_display(I2C_HandleTypeDef hi2c_def) {
-    char msg[64];
-    uint8_t ctrl1_xl_value;
-    HAL_StatusTypeDef status = HAL_I2C_Mem_Read(&hi2c_def, LSM6DS3_ADDRESS << 1, CTRL1_XL,
-                                                I2C_MEMADD_SIZE_8BIT, &ctrl1_xl_value, 1, HAL_MAX_DELAY);
-
-    if (status != HAL_OK) {
-        sprintf(msg, "ODR Read FAIL: %d", status);
-        Displ_CString(0, 24, _width-1, 20, msg, Font16, 1, WHITE, DDDD_WHITE);
-        return -1.0f;
-    }
-
-    sprintf(msg, "CTRL1_XL: 0x%02X", ctrl1_xl_value);
-    Displ_CString(0, 24, _width-1, 20, msg, Font16, 1, WHITE, DDDD_WHITE);
-
-    uint8_t odr_bits = (ctrl1_xl_value >> 4) & 0x0F;
-    sprintf(msg, "ODR bits: 0x%X", odr_bits);
-    Displ_CString(0, 48,_width-1, 20, msg, Font16, 1, WHITE, DDDD_WHITE);
-    float odr_value;
-    switch (odr_bits) {
-        case 0x0: odr_value = 0.0f; strcpy(msg, "ODR: Power down"); break;
-        case 0x1: odr_value = 12.5f; strcpy(msg, "ODR: 12.5 Hz"); break;
-        case 0x2: odr_value = 26.0f; strcpy(msg, "ODR: 26 Hz"); break;
-        case 0x3: odr_value = 52.0f; strcpy(msg, "ODR: 52 Hz"); break;
-        case 0x4: odr_value = 104.0f; strcpy(msg, "ODR: 104 Hz"); break;
-        case 0x5: odr_value = 208.0f; strcpy(msg, "ODR: 208 Hz"); break;
-        case 0x6: odr_value = 416.0f; strcpy(msg, "ODR: 416 Hz"); break;
-        case 0x7: odr_value = 833.0f; strcpy(msg, "ODR: 833 Hz"); break;
-        case 0x8: odr_value = 1666.0f; strcpy(msg, "ODR: 1666 Hz"); break;
-        case 0x9: odr_value = 3333.0f; strcpy(msg, "ODR: 3333 Hz"); break;
-        case 0xA: odr_value = 6666.0f; strcpy(msg, "ODR: 6666 Hz"); break;
-        default: odr_value = -1.0f; sprintf(msg, "ODR: Invalid 0x%X", odr_bits); break;
-    }
-
-    Displ_CString(0, 72, _width-1, 20, msg, Font16, 1, WHITE, DDDD_WHITE);
-    return odr_value;
-}
-
 
 /* USER CODE END 0 */
 
@@ -237,28 +145,36 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    MX_USB_HOST_Process();
+	  MX_USB_HOST_Process();
 
-    /* USER CODE BEGIN 3 */
-      if (Touch_GotATouch(1)) {
-          if (Touch_In_XY_area(BUTTON_X, BUTTON_Y, BUTTON_W, BUTTON_H)) {
-              Touch_WaitForUntouch(300);
-              current_screen = SCREEN_PLOT;
-              I2C_bus_scan();
-              while (current_screen == SCREEN_PLOT) {
-                      MX_USB_HOST_Process();
-                      drawLiveDataWithPlot(hi2c1);
+	  	  if (touch_event_flag) {
+	          touch_event_flag = 0;
+	          HandleTouchEvent(hi2c1);
+	      }
 
-                      if (Touch_GotATouch(1)) {
-                          if (Touch_In_XY_area(GO_BACK_BTN_X, GO_BACK_BTN_Y, GO_BACK_BTN_SIZE, GO_BACK_BTN_SIZE)) {
-                              Touch_WaitForUntouch(200);
-                              current_screen = SCREEN_START;
-                              drawStartButton();
-                          }
-                      }
-                  }
-          }
-      }
+	      if (current_screen == SCREEN_PLOT) {
+	          drawLiveDataWithPlot(hi2c1, selected_fs);
+	      }
+	      else{
+	    	  switch (current_screen){
+	    	  	  case SCREEN_START:
+	    	  		  break;
+	    	  	  case SCREEN_PLOT:
+	    	  		  drawLiveDataWithPlot(hi2c1, selected_fs);
+	    	  		  break;
+	    	  	  case SCREEN_CONFIG1:
+	    	  		  break;
+	    	  	  case SCREEN_CONFIG2:
+	    	  		  break;
+	    	  	  case SCREEN_MENU:
+	    	  		  break;
+	    	  	  case SCREEN_I2C:
+	    	  		  break;
+	    	  	  default:
+	    	  		  break;
+	    	  }
+
+	      }
   }
   /* USER CODE END 3 */
 }
@@ -654,7 +570,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : PA0 PA8 */
   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_8;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
