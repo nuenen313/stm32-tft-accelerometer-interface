@@ -12,7 +12,7 @@ int LSM6DS3_check_who_am_i(I2C_HandleTypeDef hi2c_def){
 	static uint8_t who_am_i;
 	HAL_StatusTypeDef status = HAL_I2C_Mem_Read(&hi2c_def, LSM6DS3_ADDRESS << 1, WHO_AM_I,
 			I2C_MEMADD_SIZE_8BIT, &who_am_i, 1, HAL_MAX_DELAY);
-	if (status == HAL_OK & who_am_i == LSM6DS3_WHO_AM_I){
+	if (status == HAL_OK && who_am_i == LSM6DS3_WHO_AM_I){
 		return who_am_i;
 	}
 	else{
