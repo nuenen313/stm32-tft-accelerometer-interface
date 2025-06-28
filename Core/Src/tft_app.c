@@ -170,36 +170,6 @@ void drawLiveDataWithPlot(I2C_HandleTypeDef hi2c_def, float selected_fs) {
         }
 }
 
-void drawLiveData(I2C_HandleTypeDef hi2c_def) {
-    if (HAL_GetTick() - lastUpdateTime >= updateInterval) {
-        lastUpdateTime = HAL_GetTick();
-
-        Displ_CLS(DDDD_WHITE);
-        Displ_CString(0, 0, _width-1, 20, "LSM6DS3 Live Data:", Font16, 1, WHITE, D_WHITE);
-
-        LSM6DS3_AccelData accel_data = LSM6DS3_read_acceleration(hi2c_def, selected_fs);
-        if (accel_data.status == 1) {
-            char msg[64];
-
-            sprintf(msg, "Accel X: %.2f g", accel_data.x);
-            Displ_CString(0, 30, _width-1, 20, msg, Font16, 1, WHITE, D_WHITE);
-
-            sprintf(msg, "Accel Y: %.2f g", accel_data.y);
-            Displ_CString(0, 50, _width-1, 20, msg, Font16, 1, WHITE, D_WHITE);
-
-            sprintf(msg, "Accel Z: %.2f g", accel_data.z);
-            Displ_CString(0, 70, _width-1, 20, msg, Font16, 1, WHITE, D_WHITE);
-
-            float total = sqrt(accel_data.x*accel_data.x + accel_data.y*accel_data.y + accel_data.z*accel_data.z);
-            sprintf(msg, "Total: %.2f g", total);
-            Displ_CString(0, 90, _width-1, 20, msg, Font16, 1, WHITE, D_WHITE);
-
-        } else {
-            Displ_CString(0, 30, _width-1, 20, "Sensor Read Failed!", Font16, 1, RED, D_WHITE);
-        }
-    }
-}
-
 void drawGoBackButton() {
     Displ_FillArea(GO_BACK_BTN_X, GO_BACK_BTN_Y, GO_BACK_BTN_SIZE, GO_BACK_BTN_SIZE, DDDD_WHITE);
     Displ_fillRoundRect(GO_BACK_BTN_X, GO_BACK_BTN_Y, GO_BACK_BTN_SIZE, GO_BACK_BTN_SIZE, GO_BACK_BTN_SIZE/6, RED);
