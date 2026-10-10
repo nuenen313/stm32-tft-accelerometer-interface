@@ -16,5 +16,5 @@ Uses [ILI9341 library from maudeve-it](https://github.com/maudeve-it/ILI9XXX-XPT
 <img width="1257" height="890" alt="polaczenia" src="https://github.com/user-attachments/assets/f23f4f20-e01b-448b-b8a8-0b4be3939565" />
 
 ## Demo:
-![LSM6DS3 TFT demo](assets/lsm6ds3-tft-demo.gif)
+![LSM6DS3 TFT demo](/lsm6ds3-tft-demo.gif)
 
